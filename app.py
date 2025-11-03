@@ -3,10 +3,21 @@ import pandas as pd
 from dash import Dash, html, dcc, Input, Output
 import plotly.express as px
 
-# ✅ 1. Put this near the top, right after your imports
-BASE_DIR  = r"C:\Users\17745\OneDrive\Desktop\Brain juice\New folder"
-CSV_PATH  = os.path.join(BASE_DIR, "merged_sku_image_sales.csv")
-MAP_PATH  = os.path.join(BASE_DIR, "drive_map.csv")
+
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # folder where app.py lives
+CSV_PATH = os.path.join(BASE_DIR, "merged_sku_image_sales.csv")
+MAP_PATH = os.path.join(BASE_DIR, "drive_map.csv")
+IMAGES_DIR = os.path.join(BASE_DIR, "images")  # optional local fallback
+
+print("BASE_DIR:", BASE_DIR)
+print("Exists CSV?", os.path.exists(CSV_PATH))
+print("Exists MAP?", os.path.exists(MAP_PATH))
+
+
+
+
+
 
 # ✅ 2. Load your main CSV
 df = pd.read_csv(CSV_PATH)
@@ -62,4 +73,5 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+
 
