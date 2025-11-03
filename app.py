@@ -1,21 +1,45 @@
-import os
+import os, glob
 import pandas as pd
-from dash import Dash, html, dcc, Input, Output
+from dash import Dash, html, dcc, Input, Output, dash_table
 import plotly.express as px
+from flask import send_from_directory
 
+# ---------- PATHS (relative to this file) ----------
+BASE_DIR  = os.path.dirname(os.path.abspath(__file__))  # /opt/render/project/src in Render
+CSV_PATH  = os.path.join(BASE_DIR, "merged_sku_image_sales.csv")
+MAP_PATH  = os.path.join(BASE_DIR, "drive_map.csv")
+IMAGES_DIR = os.path.join(BASE_DIR, "images")  # optional local fallback; can be absent
 
-import os
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # folder where app.py lives
-CSV_PATH = os.path.join(BASE_DIR, "merged_sku_image_sales.csv")
-MAP_PATH = os.path.join(BASE_DIR, "drive_map.csv")
-IMAGES_DIR = os.path.join(BASE_DIR, "images")  # optional local fallback
+print("[BOOT] BASE_DIR:", BASE_DIR)
+print("[BOOT] Files in BASE_DIR:", sorted(os.listdir(BASE_DIR)))
+print("[BOOT] CSV exists?", os.path.exists(CSV_PATH), "->", CSV_PATH)
+print("[BOOT] MAP exists?", os.path.exists(MAP_PATH), "->", MAP_PATH)
 
-print("BASE_DIR:", BASE_DIR)
-print("Exists CSV?", os.path.exists(CSV_PATH))
-print("Exists MAP?", os.path.exists(MAP_PATH))
+def _require(path: str, label: str):
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            f"[STARTUP] Missing {label} at {path}\n"
+            f"Contents of BASE_DIR ({BASE_DIR}):\n  " + "\n  ".join(sorted(os.listdir(BASE_DIR)))
+        )
 
+# Require the main CSV; drive_map is optional
+_require(CSV_PATH, "merged_sku_image_sales.csv")
 
+# ---------- LOAD DATA ----------
+# robust CSV read (handles BOM and stray $/commas later)
+df = pd.read_csv(CSV_PATH, encoding="utf-8-sig")
 
+# Drive map (optional)
+if os.path.exists(MAP_PATH):
+    dm = pd.read_csv(MAP_PATH, encoding="utf-8-sig")
+    if {"images", "drive_id"}.issubset(dm.columns):
+        dm["images"] = dm["images"].astype(str).str.strip()
+        df["images"] = df["images"].astype(str).str.strip()
+        df = df.merge(dm[["images", "drive_id"]], on="images", how="left")
+    else:
+        print("[BOOT][WARN] drive_map.csv missing required columns: images, drive_id")
+else:
+    df["drive_id"] = None
 
 
 
@@ -73,5 +97,6 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+
 
 
